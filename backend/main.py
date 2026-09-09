@@ -13,8 +13,21 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from check_lean_proof import check_lean_proof
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://axiom-or-theorem.vercel.app",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 Base.metadata.create_all(bind=engine)
 
