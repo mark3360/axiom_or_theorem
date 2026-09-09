@@ -25,7 +25,7 @@ export default function RoomSelectPage() {
         try {
         const userId = getUserId() 
         // Join the room
-            const joinResponse = await fetch(`/api/rooms/${roomCode}/join`, {
+            const joinResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms/${roomCode}/join`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export default function RoomSelectPage() {
 
     const handleCreateRoom = async () => {
     try {
-            const createResponse = await fetch("/api/rooms", {
+            const createResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms`, {
                 method: "POST",
             });
 

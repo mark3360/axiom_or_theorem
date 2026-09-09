@@ -19,7 +19,7 @@ function GamePage() {
         const userId = getUserId();
 
         const socket = new WebSocket(
-            `/ws/${roomCode}/${userId}`
+            `${import.meta.env.VITE_BACKEND_URL.replace(/^http/, "ws")}/ws/${roomCode}/${userId}`
         );
 
         socketRef.current = socket;
