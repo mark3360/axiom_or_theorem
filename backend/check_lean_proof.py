@@ -1,58 +1,63 @@
-import uuid
 import os
-import shutil
-import subprocess
 
-SANDBOX_INPUT = "/tmp/lean-sandbox"
+import requests
+
+
+AXLE_URL = "https://axle.axiommath.ai/api/v1/check"
+AXLE_API_KEY = os.environ["AXLE_API_KEY"]
+
+# AXLE environment to use.
+AXLE_ENVIRONMENT = "lean-4.28.0"
+
 
 def check_lean_proof(code: str) -> dict:
-    # Give this execution its own directory
-    execution_id = uuid.uuid4().hex
-
-    execution_dir = os.path.join(
-        SANDBOX_INPUT,
-        execution_id
-    )
-
-    os.makedirs(execution_dir)
-
-    filepath = os.path.join(
-        execution_dir,
-        "Main.lean"
-    )
-
     try:
-        # Write the user's Lean code
-        with open(filepath, "w") as f:
-            f.write(code)
-
-        # Run Lean inside our existing container
-        result = subprocess.run(
-            [
-                "docker",
-                "exec",
-                "lean-sandbox",
-                "/root/.elan/toolchains/leanprover--lean4---v4.33.1/bin/lean",
-                f"/input/{execution_id}/Main.lean",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
+        response = requests.post(
+            AXLE_URL,
+            headers={
+                "Authorization": f"Bearer {AXLE_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "content": code,
+                "environment": AXLE_ENVIRONMENT,
+            },
+            timeout=30,
         )
 
+        response.raise_for_status()
+
+        result = response.json()
+
+        # AXLE's `okay` means the Lean code compiled.
         return {
-            "success": result.returncode == 0,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "success": result["okay"],
+            "stdout": "\n".join(
+                result["lean_messages"].get("infos", [])
+            ),
+            "stderr": "\n".join(
+                result["lean_messages"].get("errors", [])
+            ),
         }
 
-    except subprocess.TimeoutExpired:
+    except requests.Timeout:
         return {
             "success": False,
             "stdout": "",
-            "stderr": "Lean execution timed out.",
+            "stderr": "AXLE request timed out.",
         }
 
-    finally:
-        # Delete the user's code after execution
-        shutil.rmtree(execution_dir, ignore_errors=True)
+    except requests.RequestException as e:
+        return {
+            "success": False,
+            "stdout": "",
+            "stderr": f"AXLE request failed: {e}",
+        }
+
+    except (KeyError, ValueError) as e:
+        return {
+            "success": False,
+            "stdout": "",
+            "stderr": f"Invalid response from AXLE: {e}",
+        }
+
