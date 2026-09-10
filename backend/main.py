@@ -150,6 +150,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: str)
 
                 # If we reach here, the axiom is good, and is ready to be added to the game. 
                 the_axiom = result['stdout']
+                the_axiom = the_axiom.slice(the_axiom.indexOf("def"));
 
                 the_axiom = the_axiom[:5] + str(room.num_messages + 1) + the_axiom[5:]
 
